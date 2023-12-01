@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -125,15 +126,28 @@ func compile(cc string, args []string, data *CompileData) (string, []byte, error
 	if err := srcTemplate.Execute(src, data); err != nil {
 		return "", nil, fmt.Errorf("failed to generate source: %w", err)
 	}
+	srcFile, err := osutil.TempFile("syz-extract-src")
+	if err != nil {
+		return "", nil, err
+	}
+	osutil.WriteFile(srcFile, src.Bytes())
 	binFile, err := osutil.TempFile("syz-extract-bin")
 	if err != nil {
 		return "", nil, err
 	}
-	args = append(args, []string{
-		"-x", "c", "-",
-		"-o", binFile,
-		"-w",
-	}...)
+	if runtime.GOOS == "windows" {
+		args = append(args, []string{
+			"-o", binFile,
+			"-w",
+			"-Tc", srcFile,
+		}...)
+	} else {
+		args = append(args, []string{
+			"-x", "c", "-",
+			"-o", binFile,
+			"-w",
+		}...)
+	}
 	if data.ExtractFromELF {
 		args = append(args, "-c")
 	}

@@ -19,6 +19,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef GOOS_windows
+#define NOMINMAX
+#endif
+
 #include "defs.h"
 
 #if defined(__GNUC__)
@@ -453,7 +457,7 @@ int main(int argc, char** argv)
 
 	os_init(argc, argv, (char*)SYZ_DATA_OFFSET, SYZ_NUM_PAGES * SYZ_PAGE_SIZE);
 	current_thread = &threads[0];
-
+#ifndef GOOS_windows
 #if SYZ_EXECUTOR_USES_SHMEM
 	void* mmap_out = mmap(NULL, kMaxInput, PROT_READ, MAP_PRIVATE, kInFd, 0);
 #else
@@ -475,7 +479,7 @@ int main(int argc, char** argv)
 	// For SYZ_EXECUTOR_USES_FORK_SERVER, close(kOutFd) is invoked in the forked child,
 	// after the program has been received.
 #endif // if  SYZ_EXECUTOR_USES_SHMEM
-
+#endif // GOOS_Windows
 	use_temporary_dir();
 	install_segv_handler();
 	setup_control_pipes();
